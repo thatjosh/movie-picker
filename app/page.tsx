@@ -131,10 +131,13 @@ export default function Home() {
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
-  const [canvasScale, setCanvasScale] = useState(1);
+  const [canvasScale, setCanvasScale] = useState(() =>
+    typeof window === "undefined" ? 1 : Math.min(1, window.innerWidth / SIZE, (window.innerHeight - 80) / SIZE)
+  );
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const leftPanelRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(0);
   const angleRef = useRef(0);
   const cancelRef = useRef(false);
@@ -151,20 +154,35 @@ export default function Home() {
     if (!started) setRemaining(parseMovies(input));
   }, [input, started]);
 
-  // Scale canvas to fit available space without feedback loops:
-  // width from the stable w-full wrapper div, height from window (unaffected by zoom)
+  // Scale canvas to fit available space without feedback loops.
+  // Observe the canvas wrapper (stable w-full width) and the left panel (height shifts the
+  // available vertical space on mobile). Read height from window — never from the canvas
+  // or right panel, which would loop when canvasScale changes.
   useEffect(() => {
     const wrapper = wrapperRef.current;
+    const leftPanel = leftPanelRef.current;
     if (!wrapper) return;
+
     function compute() {
       const availW = wrapper!.getBoundingClientRect().width;
-      const availH = window.innerHeight - 80; // 80px reserved for button + gap
-      setCanvasScale(Math.min(1, availW / SIZE, availH / SIZE));
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+        // Mobile page scrolls vertically — scale by width only so the spinner
+        // always fits horizontally with some breathing room for the glow.
+        setCanvasScale(Math.min(1, (availW - 32) / SIZE));
+      } else {
+        // Desktop is fixed-height — scale to fit both width and height.
+        const availH = window.innerHeight - 72; // gap-6 (24) + lg button (44) + 4px
+        setCanvasScale(Math.min(1, availW / SIZE, availH / SIZE));
+      }
     }
+
     compute();
     const ro = new ResizeObserver(compute);
     ro.observe(wrapper);
-    return () => ro.disconnect();
+    if (leftPanel) ro.observe(leftPanel); // recompute when left panel height changes
+    window.addEventListener("resize", compute);
+    return () => { ro.disconnect(); window.removeEventListener("resize", compute); };
   }, []);
 
   function spinRound(movies: string[]): Promise<string> {
@@ -262,7 +280,7 @@ export default function Home() {
   return (
     <div className="flex flex-col md:flex-row md:h-screen bg-background">
       {/* Left panel — full width on mobile, fixed 346px sidebar on desktop */}
-      <div className="w-full md:w-[346px] md:shrink-0 border-b md:border-b-0 md:border-r flex flex-col p-6 gap-5 md:overflow-y-auto">
+      <div ref={leftPanelRef} className="w-full md:w-[346px] md:shrink-0 border-b md:border-b-0 md:border-r flex flex-col p-6 gap-5 md:overflow-y-auto">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Movie Picker</h1>
           <p className="text-sm text-muted-foreground mt-1">One per line</p>
@@ -313,7 +331,7 @@ export default function Home() {
       </div>
 
       {/* Right panel */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 md:py-0">
+      <div className="w-full md:flex-1 flex flex-col items-center justify-center gap-6 py-8 md:py-0">
         {winner ? (
           <div className="text-center space-y-3">
             <p className="text-muted-foreground text-sm uppercase tracking-widest">
@@ -347,7 +365,7 @@ export default function Home() {
               <canvas
                 ref={canvasRef}
                 className="glow-flicker"
-                style={{ width: SIZE, height: SIZE, zoom: canvasScale }}
+                style={{ width: SIZE * canvasScale, height: SIZE * canvasScale }}
               />
             </div>
             <Button onClick={start} disabled={!canStart} size="lg" className="w-36 uppercase tracking-widest text-xs">
