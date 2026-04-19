@@ -255,9 +255,9 @@ export default function Home() {
   const canStart = inputMovies.length >= 2 && !spinning && !winner;
 
   return (
-    <div className="flex flex-col md:flex-row md:h-screen bg-background md:overflow-hidden">
+    <div className="flex flex-col md:flex-row md:h-screen bg-background">
       {/* Left panel — full width on mobile, fixed 346px sidebar on desktop */}
-      <div className="w-full md:w-[346px] md:shrink-0 border-b md:border-b-0 md:border-r flex flex-col p-6 gap-5">
+      <div className="w-full md:w-[346px] md:shrink-0 border-b md:border-b-0 md:border-r flex flex-col p-6 gap-5 md:overflow-y-auto">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Movie Picker</h1>
           <p className="text-sm text-muted-foreground mt-1">One per line</p>
@@ -338,17 +338,11 @@ export default function Home() {
           </p>
         ) : (
           <>
-            <div ref={wrapperRef} className="w-full flex justify-center overflow-hidden">
+            <div ref={wrapperRef} className="w-full flex justify-center">
               <canvas
                 ref={canvasRef}
                 className="glow-flicker"
-                style={{
-                  width: SIZE,
-                  height: SIZE,
-                  transform: `scale(${canvasScale})`,
-                  transformOrigin: "top center",
-                  marginBottom: `${(canvasScale - 1) * SIZE}px`,
-                }}
+                style={{ width: SIZE, height: SIZE, zoom: canvasScale }}
               />
             </div>
             <Button onClick={start} disabled={!canStart} size="lg" className="w-36 uppercase tracking-widest text-xs">
