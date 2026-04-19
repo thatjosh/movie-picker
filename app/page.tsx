@@ -131,8 +131,10 @@ export default function Home() {
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
+  const [canvasScale, setCanvasScale] = useState(1);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(0);
   const angleRef = useRef(0);
   const cancelRef = useRef(false);
@@ -148,6 +150,17 @@ export default function Home() {
   useEffect(() => {
     if (!started) setRemaining(parseMovies(input));
   }, [input, started]);
+
+  // Scale canvas to fit its wrapper on small screens
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setCanvasScale(Math.min(1, entry.contentRect.width / SIZE));
+    });
+    observer.observe(wrapper);
+    return () => observer.disconnect();
+  }, []);
 
   function spinRound(movies: string[]): Promise<string> {
     return new Promise((resolve) => {
@@ -242,9 +255,9 @@ export default function Home() {
   const canStart = inputMovies.length >= 2 && !spinning && !winner;
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
-      {/* Left panel — w-72 (288px) × 1.2 = 346px */}
-      <div className="w-[346px] shrink-0 border-r flex flex-col p-6 gap-5">
+    <div className="flex flex-col md:flex-row md:h-screen bg-background md:overflow-hidden">
+      {/* Left panel — full width on mobile, fixed 346px sidebar on desktop */}
+      <div className="w-full md:w-[346px] md:shrink-0 border-b md:border-b-0 md:border-r flex flex-col p-6 gap-5">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Movie Picker</h1>
           <p className="text-sm text-muted-foreground mt-1">One per line</p>
@@ -252,7 +265,7 @@ export default function Home() {
 
         <Textarea
           placeholder={"The Godfather\nInception\nInterstellar"}
-          className="flex-1 resize-none font-mono text-base"
+          className="h-40 md:h-auto md:flex-1 resize-none font-mono text-base"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={started}
@@ -295,7 +308,7 @@ export default function Home() {
       </div>
 
       {/* Right panel */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-6">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 md:py-0">
         {winner ? (
           <div className="text-center space-y-3">
             <p className="text-muted-foreground text-sm uppercase tracking-widest">
@@ -325,11 +338,19 @@ export default function Home() {
           </p>
         ) : (
           <>
-            <canvas
-              ref={canvasRef}
-              className="glow-flicker"
-              style={{ width: SIZE, height: SIZE }}
-            />
+            <div ref={wrapperRef} className="w-full flex justify-center overflow-hidden">
+              <canvas
+                ref={canvasRef}
+                className="glow-flicker"
+                style={{
+                  width: SIZE,
+                  height: SIZE,
+                  transform: `scale(${canvasScale})`,
+                  transformOrigin: "top center",
+                  marginBottom: `${(canvasScale - 1) * SIZE}px`,
+                }}
+              />
+            </div>
             <Button onClick={start} disabled={!canStart} size="lg" className="w-36 uppercase tracking-widest text-xs">
               {spinning ? "Spinning…" : "Start"}
             </Button>
