@@ -151,18 +151,20 @@ export default function Home() {
     if (!started) setRemaining(parseMovies(input));
   }, [input, started]);
 
-  // Scale canvas to fit the right panel on any screen size
+  // Scale canvas to fit available space without feedback loops:
+  // width from the stable w-full wrapper div, height from window (unaffected by zoom)
   useEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
-    const observer = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      // Reserve ~80px for the Start button + gap below the canvas
-      const availH = Math.max(0, height - 80);
-      setCanvasScale(Math.min(1, width / SIZE, availH / SIZE));
-    });
-    observer.observe(wrapper);
-    return () => observer.disconnect();
+    function compute() {
+      const availW = wrapper!.getBoundingClientRect().width;
+      const availH = window.innerHeight - 80; // 80px reserved for button + gap
+      setCanvasScale(Math.min(1, availW / SIZE, availH / SIZE));
+    }
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(wrapper);
+    return () => ro.disconnect();
   }, []);
 
   function spinRound(movies: string[]): Promise<string> {
@@ -311,7 +313,7 @@ export default function Home() {
       </div>
 
       {/* Right panel */}
-      <div ref={wrapperRef} className="flex-1 flex flex-col items-center justify-center gap-6 py-8 md:py-0">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 md:py-0">
         {winner ? (
           <div className="text-center space-y-3">
             <p className="text-muted-foreground text-sm uppercase tracking-widest">
@@ -341,7 +343,7 @@ export default function Home() {
           </p>
         ) : (
           <>
-            <div className="flex justify-center">
+            <div ref={wrapperRef} className="w-full flex justify-center">
               <canvas
                 ref={canvasRef}
                 className="glow-flicker"
