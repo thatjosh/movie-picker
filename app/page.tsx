@@ -93,9 +93,9 @@ function drawWheel(canvas: HTMLCanvasElement, angle: number, movies: string[]) {
     ctx.textAlign = "right";
     ctx.shadowBlur = 0;
     ctx.fillStyle = brightness(colors[i]) > 0.52 ? "#1B1B1B" : "#E4E4DE";
-    const fs = Math.max(9, Math.min(12, 104 / movies.length + 4));
+    const fs = Math.max(12, Math.min(18, 140 / movies.length + 6));
     ctx.font = `500 ${fs}px Georgia, 'Times New Roman', serif`;
-    const label = (movie.length > 26 ? movie.slice(0, 25) + "…" : movie).toUpperCase();
+    const label = movie.length > 26 ? movie.slice(0, 25) + "…" : movie;
     ctx.fillText(label, radius - 14, fs / 3);
     ctx.restore();
   });
@@ -125,7 +125,7 @@ function drawWheel(canvas: HTMLCanvasElement, angle: number, movies: string[]) {
 }
 
 export default function Home() {
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState("La La Land\nInception\nEdgerunners\nLove, Death + Robots\nDune");
   const [remaining, setRemaining] = useState<string[]>([]);
   const [eliminated, setEliminated] = useState<string[]>([]);
   const [spinning, setSpinning] = useState(false);
@@ -158,33 +158,43 @@ export default function Home() {
     if (!started) setRemaining(parseMovies(input));
   }, [input, started]);
 
+  // Recompute canvas scale whenever the wrapper mounts/unmounts (movies cross the >=2 threshold)
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+    const availW = wrapper.getBoundingClientRect().width;
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      setCanvasScale(Math.min(1, (availW - 32) / SIZE));
+    } else {
+      const availH = window.innerHeight - 72;
+      setCanvasScale(Math.min(1, availW / SIZE, availH / SIZE));
+    }
+  }, [remaining.length >= 2]);
+
   // Scale canvas to fit available space without feedback loops.
   // Observe the canvas wrapper (stable w-full width) and the left panel (height shifts the
   // available vertical space on mobile). Read height from window — never from the canvas
   // or right panel, which would loop when canvasScale changes.
   useEffect(() => {
-    const wrapper = wrapperRef.current;
     const leftPanel = leftPanelRef.current;
-    if (!wrapper) return;
 
     function compute() {
-      const availW = wrapper!.getBoundingClientRect().width;
+      const wrapper = wrapperRef.current;
+      if (!wrapper) return;
+      const availW = wrapper.getBoundingClientRect().width;
       const isMobile = window.innerWidth < 768;
       if (isMobile) {
-        // Mobile page scrolls vertically — scale by width only so the spinner
-        // always fits horizontally with some breathing room for the glow.
         setCanvasScale(Math.min(1, (availW - 32) / SIZE));
       } else {
-        // Desktop is fixed-height — scale to fit both width and height.
-        const availH = window.innerHeight - 72; // gap-6 (24) + lg button (44) + 4px
+        const availH = window.innerHeight - 72;
         setCanvasScale(Math.min(1, availW / SIZE, availH / SIZE));
       }
     }
 
     compute();
     const ro = new ResizeObserver(compute);
-    ro.observe(wrapper);
-    if (leftPanel) ro.observe(leftPanel); // recompute when left panel height changes
+    if (leftPanel) ro.observe(leftPanel);
     window.addEventListener("resize", compute);
     return () => { ro.disconnect(); window.removeEventListener("resize", compute); };
   }, []);
@@ -324,13 +334,23 @@ export default function Home() {
           <p className="text-sm text-muted-foreground mt-1">One per line</p>
         </div>
 
-        <Textarea
-          placeholder={"The Godfather\nInception\nInterstellar"}
-          className="h-40 md:h-auto md:flex-1 resize-none font-mono text-base"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          disabled={started}
-        />
+        <div className="relative flex flex-col md:flex-1">
+          <Textarea
+            placeholder={"The Godfather\nInception\nInterstellar"}
+            className="h-40 md:h-full resize-none font-mono text-base"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={started}
+          />
+          {input.length > 0 && !started && (
+            <button
+              onClick={() => setInput("")}
+              className="absolute top-2 right-2 text-muted-foreground hover:text-foreground transition-colors text-xs uppercase tracking-widest"
+            >
+              Clear
+            </button>
+          )}
+        </div>
 
         {eliminated.length > 0 && (
           <div className="shrink-0">
@@ -389,9 +409,26 @@ export default function Home() {
                 </span>
               ))}
             </p>
-            <Button variant="outline" onClick={reset} className="mt-2 uppercase tracking-widest text-xs">
-              Start Over
-            </Button>
+            <div className="flex gap-3 justify-center pt-2">
+              <Button
+                variant="outline"
+                size="lg"
+                className="uppercase tracking-widest text-xs"
+                style={{ animation: "char-fade-in 0.3s ease both", animationDelay: `${(winner.length + 2) * 0.06 + 0.2}s`, opacity: 0 }}
+                onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(winner)}`, "_blank", "noopener,noreferrer")}
+              >
+                Open
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={reset}
+                className="uppercase tracking-widest text-xs"
+                style={{ animation: "char-fade-in 0.3s ease both", animationDelay: `${(winner.length + 2) * 0.06 + 0.35}s`, opacity: 0 }}
+              >
+                Start Over
+              </Button>
+            </div>
           </div>
         ) : inputMovies.length < 2 ? (
           <p className="text-muted-foreground text-sm">
