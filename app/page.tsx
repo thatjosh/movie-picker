@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Typewriter } from "@/components/typewriter";
 
 const SIZE = 520;
 
@@ -93,7 +94,7 @@ function drawWheel(canvas: HTMLCanvasElement, angle: number, movies: string[]) {
     ctx.textAlign = "right";
     ctx.shadowBlur = 0;
     ctx.fillStyle = brightness(colors[i]) > 0.52 ? "#1B1B1B" : "#E4E4DE";
-    const fs = Math.max(12, Math.min(18, 140 / movies.length + 6));
+    const fs = Math.max(13, Math.min(15, 120 / movies.length + 5));
     ctx.font = `500 ${fs}px Georgia, 'Times New Roman', serif`;
     const label = movie.length > 26 ? movie.slice(0, 25) + "…" : movie;
     ctx.fillText(label, radius - 14, fs / 3);
@@ -125,7 +126,7 @@ function drawWheel(canvas: HTMLCanvasElement, angle: number, movies: string[]) {
 }
 
 export default function Home() {
-  const [input, setInput] = useState("La La Land\nInception\nEdgerunners\nLove, Death + Robots\nDune");
+  const [input, setInput] = useState("La La Land\nInception\nEdgerunners\nLove, Death + Robots\nDune\nKill Bill\nDemon Slayer");
   const [remaining, setRemaining] = useState<string[]>([]);
   const [eliminated, setEliminated] = useState<string[]>([]);
   const [spinning, setSpinning] = useState(false);
@@ -165,7 +166,7 @@ export default function Home() {
     const availW = wrapper.getBoundingClientRect().width;
     const isMobile = window.innerWidth < 768;
     if (isMobile) {
-      setCanvasScale(Math.min(1, (availW - 32) / SIZE));
+      setCanvasScale(Math.min(1, (availW - 32) / SIZE) * 0.8);
     } else {
       const availH = window.innerHeight - 72;
       setCanvasScale(Math.min(1, availW / SIZE, availH / SIZE));
@@ -185,7 +186,7 @@ export default function Home() {
       const availW = wrapper.getBoundingClientRect().width;
       const isMobile = window.innerWidth < 768;
       if (isMobile) {
-        setCanvasScale(Math.min(1, (availW - 32) / SIZE));
+        setCanvasScale(Math.min(1, (availW - 32) / SIZE) * 0.8);
       } else {
         const availH = window.innerHeight - 72;
         setCanvasScale(Math.min(1, availW / SIZE, availH / SIZE));
@@ -262,6 +263,7 @@ export default function Home() {
 
       setEliminated((prev) => [loser, ...prev]);
       setRemaining(next);
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
 
       if (next.length > 1) {
         if (!turboRef.current) await skippableDelay(650);
@@ -287,6 +289,7 @@ export default function Home() {
     // Draw the full wheel immediately, then spin
     const canvas = canvasRef.current;
     if (canvas) drawWheel(canvas, 0, movies);
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     runGame(movies);
   }
 
@@ -330,14 +333,18 @@ export default function Home() {
       {/* Left panel — full width on mobile, fixed 346px sidebar on desktop */}
       <div ref={leftPanelRef} className="w-full md:w-[346px] md:shrink-0 border-b md:border-b-0 md:border-r flex flex-col p-6 gap-5 md:overflow-y-auto">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Movie Picker</h1>
-          <p className="text-sm text-muted-foreground mt-1">One per line</p>
+          <h1 className="text-4xl font-bold tracking-tight">
+            <Typewriter text="Movie Picker" speed={75} />
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1 font-sans">
+            <Typewriter text="Edit the textbox, one movie per line" speed={40} />
+          </p>
         </div>
 
         <div className="relative flex flex-col md:flex-1">
           <Textarea
             placeholder={"The Godfather\nInception\nInterstellar"}
-            className="h-40 md:h-full resize-none font-mono text-base"
+            className="h-40 md:h-full resize-none font-mono text-sm"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={started}
@@ -361,7 +368,7 @@ export default function Home() {
               {eliminated.map((m) => {
                 const display = m.length > 30 ? m.slice(0, 29) + "…" : m;
                 return (
-                  <li key={m} className="text-base text-muted-foreground line-through whitespace-nowrap">
+                  <li key={m} className="text-sm text-muted-foreground whitespace-nowrap">
                     {display.split("").map((char, ci) => (
                       <span
                         key={ci}
@@ -369,6 +376,7 @@ export default function Home() {
                           display: "inline-block",
                           animation: `char-fade-in 0.25s ease both`,
                           animationDelay: `${ci * 0.035}s`,
+                          textDecoration: "line-through",
                         }}
                       >
                         {char === " " ? "\u00a0" : char}
@@ -449,7 +457,7 @@ export default function Home() {
               </Button>
               {spinning && (
                 <Button variant="outline" onClick={handleFastForward} disabled={skipUsed} size="lg" className="w-36 uppercase tracking-widest text-xs disabled:pointer-events-auto disabled:cursor-not-allowed">
-                  Skip ⏭
+                  Turbo ⏭
                 </Button>
               )}
             </div>
