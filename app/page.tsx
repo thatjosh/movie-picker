@@ -131,6 +131,7 @@ export default function Home() {
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
+  const [skipUsed, setSkipUsed] = useState(false);
   const [canvasScale, setCanvasScale] = useState(() =>
     typeof window === "undefined" ? 1 : Math.min(1, window.innerWidth / SIZE, (window.innerHeight - 80) / SIZE)
   );
@@ -141,6 +142,9 @@ export default function Home() {
   const rafRef = useRef<number>(0);
   const angleRef = useRef(0);
   const cancelRef = useRef(false);
+  const turboRef = useRef(false);
+  const skipDelayRef = useRef<(() => void) | null>(null);
+  const spinStateRef = useRef<{ startAngle: number; targetAngle: number; duration: number; t0: number } | null>(null);
 
   // Draw whenever remaining changes (idle redraws only)
   useEffect(() => {
@@ -185,21 +189,32 @@ export default function Home() {
     return () => { ro.disconnect(); window.removeEventListener("resize", compute); };
   }, []);
 
+  function skippableDelay(ms: number): Promise<void> {
+    return new Promise<void>((resolve) => {
+      const id = setTimeout(resolve, ms);
+      skipDelayRef.current = () => { clearTimeout(id); resolve(); };
+    });
+  }
+
   function spinRound(movies: string[]): Promise<string> {
     return new Promise((resolve) => {
       const canvas = canvasRef.current!;
-      const extraSpins = 5 + Math.random() * 5;
-      const totalRotation = Math.PI * 2 * extraSpins;
-      const duration = 3000 + Math.random() * 1200;
-      const startAngle = angleRef.current;
-      const targetAngle = startAngle + totalRotation;
-      const t0 = performance.now();
+      const turbo = turboRef.current;
+      const extraSpins = turbo ? 1 + Math.random() * 0.5 : 1 + Math.random() * 1.5;
+
+      spinStateRef.current = {
+        startAngle: angleRef.current,
+        targetAngle: angleRef.current + Math.PI * 2 * extraSpins,
+        duration: turbo ? 800 : 1500 + Math.random() * 600,
+        t0: performance.now(),
+      };
 
       function frame(now: number) {
         if (cancelRef.current) return;
-        const t = Math.min((now - t0) / duration, 1);
+        const s = spinStateRef.current!;
+        const t = Math.min((now - s.t0) / s.duration, 1);
         const eased = 1 - Math.pow(1 - t, 4);
-        const angle = startAngle + (targetAngle - startAngle) * eased;
+        const angle = s.startAngle + (s.targetAngle - s.startAngle) * eased;
         angleRef.current = angle;
         drawWheel(canvas, angle, movies);
 
@@ -210,6 +225,7 @@ export default function Home() {
           const norm = ((angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
           const ptr = ((2 * Math.PI) - norm) % (2 * Math.PI);
           const idx = Math.floor(ptr / sliceAngle) % movies.length;
+          spinStateRef.current = null;
           resolve(movies[idx]);
         }
       }
@@ -227,7 +243,8 @@ export default function Home() {
       const loser = await spinRound(current);
       if (cancelRef.current) return;
 
-      await new Promise<void>((r) => setTimeout(r, 450));
+      if (turboRef.current) await skippableDelay(60);
+      else await skippableDelay(450);
       if (cancelRef.current) return;
 
       const next = current.filter((m) => m !== loser);
@@ -237,7 +254,7 @@ export default function Home() {
       setRemaining(next);
 
       if (next.length > 1) {
-        await new Promise<void>((r) => setTimeout(r, 650));
+        if (!turboRef.current) await skippableDelay(650);
       }
     }
 
@@ -263,8 +280,29 @@ export default function Home() {
     runGame(movies);
   }
 
+  function handleFastForward() {
+    setSkipUsed(true);
+    turboRef.current = true;
+    if (spinStateRef.current) {
+      const s = spinStateRef.current;
+      spinStateRef.current = { startAngle: angleRef.current, targetAngle: s.targetAngle, duration: 800, t0: performance.now() };
+    }
+    if (skipDelayRef.current) {
+      const skip = skipDelayRef.current;
+      skipDelayRef.current = null;
+      skip();
+    }
+  }
+
   function reset() {
     cancelRef.current = true;
+    turboRef.current = false;
+    spinStateRef.current = null;
+    setSkipUsed(false);
+    if (skipDelayRef.current) {
+      skipDelayRef.current();
+      skipDelayRef.current = null;
+    }
     cancelAnimationFrame(rafRef.current);
     angleRef.current = 0;
     setStarted(false);
@@ -368,9 +406,16 @@ export default function Home() {
                 style={{ width: SIZE * canvasScale, height: SIZE * canvasScale }}
               />
             </div>
-            <Button onClick={start} disabled={!canStart} size="lg" className="w-36 uppercase tracking-widest text-xs">
-              {spinning ? "Spinning…" : "Start"}
-            </Button>
+            <div className="flex gap-3">
+              <Button onClick={start} disabled={!canStart} size="lg" className="w-36 uppercase tracking-widest text-xs">
+                {spinning ? "Spinning…" : "Start"}
+              </Button>
+              {spinning && (
+                <Button variant="outline" onClick={handleFastForward} disabled={skipUsed} size="lg" className="w-36 uppercase tracking-widest text-xs disabled:pointer-events-auto disabled:cursor-not-allowed">
+                  Skip ⏭
+                </Button>
+              )}
+            </div>
           </>
         )}
       </div>
