@@ -458,7 +458,7 @@ export default function Home() {
               </Button>
               {spinning && (
                 <Button variant="outline" onClick={handleFastForward} disabled={skipUsed} size="lg" className="w-36 uppercase tracking-widest text-xs disabled:pointer-events-auto disabled:cursor-not-allowed">
-                  Turbo
+                  Turbo 🔥
                 </Button>
               )}
             </div>
