@@ -94,7 +94,8 @@ function drawWheel(canvas: HTMLCanvasElement, angle: number, movies: string[]) {
     ctx.textAlign = "right";
     ctx.shadowBlur = 0;
     ctx.fillStyle = brightness(colors[i]) > 0.52 ? "#1B1B1B" : "#E4E4DE";
-    const fs = Math.max(13, Math.min(15, 120 / movies.length + 5));
+    const isMobile = window.innerWidth < 768;
+    const fs = Math.max(13, Math.min(15, 120 / movies.length + 5)) * (isMobile ? 1.4 : 1);
     ctx.font = `500 ${fs}px Georgia, 'Times New Roman', serif`;
     const label = movie.length > 26 ? movie.slice(0, 25) + "…" : movie;
     ctx.fillText(label, radius - 14, fs / 3);
