@@ -444,14 +444,14 @@ export default function Home() {
           </p>
         ) : (
           <>
-            <div ref={wrapperRef} className="w-full flex justify-center">
+            <div ref={wrapperRef} className="w-full flex justify-center order-2 md:order-1">
               <canvas
                 ref={canvasRef}
                 className="glow-flicker"
                 style={{ width: SIZE * canvasScale, height: SIZE * canvasScale }}
               />
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 order-1 md:order-2">
               <Button onClick={start} disabled={!canStart} size="lg" className="w-36 uppercase tracking-widest text-xs">
                 {spinning ? "Spinning…" : "Start"}
               </Button>
