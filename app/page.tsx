@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Typewriter } from "@/components/typewriter";
+import { Glitch, RevealSpeed } from "@/components/glitch";
 
 const SIZE = 520;
 
@@ -334,11 +334,11 @@ export default function Home() {
       {/* Left panel — full width on mobile, fixed 346px sidebar on desktop */}
       <div ref={leftPanelRef} className="w-full md:w-[346px] md:shrink-0 border-b md:border-b-0 md:border-r flex flex-col p-6 gap-5 md:overflow-y-auto">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">
-            <Typewriter text="Movie Picker" speed={75} />
+          <h1 className="text-4xl tracking-tight">
+            <Glitch content="Movie Picker" revealSpeed={RevealSpeed.ModeratelySlow} glitchTime={800} />
           </h1>
           <p className="text-sm text-muted-foreground mt-1 font-sans">
-            <Typewriter text="Edit the textbox, one movie per line" speed={40} />
+            <Glitch content="Edit the textbox, one movie per line" revealSpeed={RevealSpeed.Moderate} glitchTime={700} />
           </p>
         </div>
 
