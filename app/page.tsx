@@ -166,7 +166,7 @@ export default function Home() {
     const availW = wrapper.getBoundingClientRect().width;
     const isMobile = window.innerWidth < 768;
     if (isMobile) {
-      setCanvasScale(Math.min(1, (availW - 32) / SIZE) * 0.8);
+      setCanvasScale(Math.min(1, (availW - 32) / SIZE) * 0.88);
     } else {
       const availH = window.innerHeight - 72;
       setCanvasScale(Math.min(1, availW / SIZE, availH / SIZE));
@@ -186,7 +186,7 @@ export default function Home() {
       const availW = wrapper.getBoundingClientRect().width;
       const isMobile = window.innerWidth < 768;
       if (isMobile) {
-        setCanvasScale(Math.min(1, (availW - 32) / SIZE) * 0.8);
+        setCanvasScale(Math.min(1, (availW - 32) / SIZE) * 0.88);
       } else {
         const availH = window.innerHeight - 72;
         setCanvasScale(Math.min(1, availW / SIZE, availH / SIZE));
@@ -399,9 +399,9 @@ export default function Home() {
       {/* Right panel */}
       <div className="w-full md:flex-1 flex flex-col items-center justify-center gap-6 py-8 md:py-0">
         {winner ? (
-          <div className="text-center space-y-3">
+          <div className="text-center space-y-3 px-8 py-6">
             <p className="text-muted-foreground text-sm uppercase tracking-widest">
-              Tonight&apos;s pick
+              Today&apos;s pick
             </p>
             <p className="text-5xl font-bold">
               {[...winner, " ", "🎉"].map((char, ci) => (
@@ -457,7 +457,7 @@ export default function Home() {
               </Button>
               {spinning && (
                 <Button variant="outline" onClick={handleFastForward} disabled={skipUsed} size="lg" className="w-36 uppercase tracking-widest text-xs disabled:pointer-events-auto disabled:cursor-not-allowed">
-                  Turbo ⏭
+                  Turbo
                 </Button>
               )}
             </div>
